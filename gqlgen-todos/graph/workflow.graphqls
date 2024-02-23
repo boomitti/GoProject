@@ -1,0 +1,17 @@
+type Workflow {
+  id: ID!
+  name: String!
+}
+
+extend type Query {
+  workflows: [Workflow!]!
+}
+
+input NewWorkflow {
+    description: String!
+  text: String!
+}
+
+extend type Mutation {
+  createWorkflow(input: NewWorkflow!): Workflow!
+}

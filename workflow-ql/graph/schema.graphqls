@@ -1,0 +1,14 @@
+# graph/schema.graphqls
+
+type Workflow {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  workflows: [Workflow!]!
+}
+
+type Mutation {
+  createWorkflow: Workflow!
+}

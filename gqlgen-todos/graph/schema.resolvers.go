@@ -13,6 +13,7 @@ import (
 	"github.com/boomitti/gqlgen-todos/graph/model"
 )
 
+// CreateTodo is the resolver for the createTodo field.
 func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
 	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
 	todo := &model.Todo{
@@ -24,10 +25,6 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 	return todo, nil
 }
 
-func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	return &model.User{ID: obj.UserID, Name: "user " + obj.UserID}, nil
-}
-
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	return r.todos, nil
@@ -35,7 +32,7 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 
 // User is the resolver for the user field.
 func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return &model.User{ID: obj.UserID, Name: "user " + obj.UserID}, nil
 }
 
 // Mutation returns MutationResolver implementation.

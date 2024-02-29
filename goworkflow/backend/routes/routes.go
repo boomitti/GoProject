@@ -17,6 +17,6 @@ func SetupRoutes(app *fiber.App, handler *handlers.ProcessHandler) {
 	api.Get("/process", handler.GetProcesses)
 	api.Post("/process", handler.CreateProcess)
 	api.Get("/process/:id", handler.GetProcessByID)
-	api.Put("/process/:id", handler.UpdateProcess)
+	api.Put("/approve", handler.UpdateProcess)
 	api.Delete("/process/:id", handler.DeleteProcess)
 }

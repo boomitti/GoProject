@@ -8,6 +8,7 @@ import (
 	"goworkflow/backend/routes"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
@@ -38,4 +39,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error starting Fiber application: %v\n", err)
 	}
+
+	app.Use(logger.New())
 }

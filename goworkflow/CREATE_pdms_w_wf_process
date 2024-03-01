@@ -1,0 +1,34 @@
+CREATE TABLE IF NOT EXISTS public.pdms_w_wf_process
+(
+    wf_process_id uuid NOT NULL DEFAULT gen_random_uuid(),
+    wf_link_form_header_process_id text COLLATE pg_catalog."default" NOT NULL,
+    wf_link_form_vers bigint NOT NULL,
+    wf_process_seq bigint NOT NULL,
+    wf_status text COLLATE pg_catalog."default" NOT NULL,
+    wf_current_assign_step text COLLATE pg_catalog."default",
+    wf_current_assign_step_assignee text COLLATE pg_catalog."default",
+    wf_current_assign_type text COLLATE pg_catalog."default",
+    wf_current_assign_id text COLLATE pg_catalog."default",
+    wf_current_assign_temp_id text COLLATE pg_catalog."default",
+    wf_current_assign_name text COLLATE pg_catalog."default",
+    wf_current_assign_accepted text COLLATE pg_catalog."default",
+    wf_current_assign_position_id text COLLATE pg_catalog."default",
+    wf_current_assign_position_name text COLLATE pg_catalog."default",
+    wf_current_assign_org_id text COLLATE pg_catalog."default",
+    wf_current_assign_org_name text COLLATE pg_catalog."default",
+    wf_current_assign_comment text COLLATE pg_catalog."default",
+    wf_current_layout text COLLATE pg_catalog."default",
+    wf_current_action text COLLATE pg_catalog."default",
+    remark text COLLATE pg_catalog."default",
+    created_date timestamp without time zone NOT NULL,
+    created_by text COLLATE pg_catalog."default" NOT NULL,
+    updated_date timestamp without time zone,
+    updated_by text COLLATE pg_catalog."default",
+    id bigint NOT NULL DEFAULT nextval('pdms_w_wf_process_id_seq'::regclass),
+    CONSTRAINT pdms_w_wf_process_pkey PRIMARY KEY (wf_process_id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE public.pdms_w_wf_process
+    OWNER to postgres;

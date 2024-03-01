@@ -1,0 +1,30 @@
+CREATE TABLE IF NOT EXISTS public.pdms_w_wf_process_action_log
+(
+    id integer NOT NULL DEFAULT nextval('pdms_w_wf_process_action_log_id_seq'::regclass),
+    wf_process_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    wf_link_form_header_process_id character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    wf_link_form_vers integer NOT NULL,
+    wf_process_seq integer NOT NULL,
+    wf_action character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    wf_current_assign_step character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_step_assignee character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_type character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_id character varying(50) COLLATE pg_catalog."default",
+    wf_current_assign_temp_id character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_name character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_accepted character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_position_id character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_position_name character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_org_id character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_org_name character varying(255) COLLATE pg_catalog."default",
+    wf_current_assign_comment text COLLATE pg_catalog."default",
+    remark character varying(255) COLLATE pg_catalog."default",
+    created_date timestamp without time zone NOT NULL,
+    created_by character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT pdms_w_wf_process_action_log_pkey PRIMARY KEY (id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE public.pdms_w_wf_process_action_log
+    OWNER to postgres;

@@ -199,14 +199,6 @@ func (handler *ProcessHandler) UpdateProcess(c *fiber.Ctx) error {
 	}
 
 	// Step 3: Update WFStatus of the existing record to "Done"
-	// err = handler.DB.Model(&existingRecord).Update("wf_status", "Done").Error
-	// if err != nil {
-	// 	// Handle the error and return an appropriate response
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-	// 		"error":   true,
-	// 		"message": "Failed to update WFStatus to 'Done'",
-	// 	})
-	// }
 	// Translate the modified GORM query to update WFStatus
 	err = handler.DB.
 		Model(&existingRecord).
@@ -249,7 +241,156 @@ func (handler *ProcessHandler) UpdateProcess(c *fiber.Ctx) error {
 
 	// Return a success response
 	return c.JSON(fiber.Map{
-		"message": "Process updated successfully",
+		"message": "Process approved successfully",
+	})
+}
+
+func (handler *ProcessHandler) ReviseProcess(c *fiber.Ctx) error {
+	// Extract data from the request, assuming it's in JSON format
+	var updateData models.WFProcess
+
+	// Unmarshal the JSON request body into the WFProcessUpdate struct
+	if err := c.BodyParser(&updateData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to parse request body",
+		})
+	}
+
+	// Find the record to update based on WFLinkFormHeaderProcessID and WFProcessSeq
+	var existingRecord models.WFProcess
+	// Translate the modified GORM query to update WFStatus
+	err := handler.DB.Where("wf_link_form_header_process_id = ? AND wf_process_seq = ?", updateData.WFLinkFormHeaderProcessID, updateData.WFProcessSeq).First(&existingRecord).Error
+	if err != nil {
+		// Handle the error (record not found, etc.) and return an appropriate response
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   true,
+			"message": "Record not found",
+		})
+	}
+
+	// Step 1: Copy the record to pdms_w_wf_process_hist_vers
+	histRecord := models.WFProcessHistVers{
+		// Copy relevant fields from existingRecord to histRecord
+		WFProcessID:                 existingRecord.WFProcessID.String(),
+		WFLinkFormHeaderProcessID:   existingRecord.WFLinkFormHeaderProcessID,
+		WFLinkFormVers:              existingRecord.WFLinkFormVers,
+		WFProcessSeq:                existingRecord.WFProcessSeq,
+		WFStatus:                    existingRecord.WFStatus,
+		WFCurrentAssignStep:         existingRecord.WFCurrentAssignStep,
+		WFCurrentAssignStepAssignee: existingRecord.WFCurrentAssignStepAssignee,
+		WFCurrentAssignType:         existingRecord.WFCurrentAssignType,
+		WFCurrentAssignID:           existingRecord.WFCurrentAssignID,
+		WFCurrentAssignTempID:       existingRecord.WFCurrentAssignTempID,
+		WFCurrentAssignName:         existingRecord.WFCurrentAssignName,
+		WFCurrentAssignAccepted:     existingRecord.WFCurrentAssignAccepted,
+		WFCurrentAssignPositionID:   existingRecord.WFCurrentAssignPositionID,
+		WFCurrentAssignPositionName: existingRecord.WFCurrentAssignPositionName,
+		WFCurrentAssignOrgID:        existingRecord.WFCurrentAssignOrgID,
+		WFCurrentAssignOrgName:      existingRecord.WFCurrentAssignOrgName,
+		WFCurrentAssignComment:      existingRecord.WFCurrentAssignComment,
+		WFCurrentLayout:             existingRecord.WFCurrentLayout,
+		WFCurrentAction:             existingRecord.WFCurrentAction,
+		CreatedDate:                 time.Now(),
+	}
+
+	// Generate a unique identifier for the histRecord
+	histRecord.WFProcessID = uuid.NewString()
+
+	// Create a record in pdms_w_wf_process_hist_vers
+	err = handler.DB.Create(&histRecord).Error
+	if err != nil {
+		// Handle the error and return an appropriate response
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to copy record to pdms_w_wf_process_hist_vers",
+		})
+	}
+
+	// Step 2: Copy the record to pdms_w_wf_process_action_log with wf_action set to "Approve"
+	actionLogRecord := models.WFProcessActionLog{
+		// Copy relevant fields from existingRecord to actionLogRecord
+		WFProcessID:                 existingRecord.WFProcessID.String(),
+		WFLinkFormHeaderProcessID:   existingRecord.WFLinkFormHeaderProcessID,
+		WFLinkFormVers:              existingRecord.WFLinkFormVers,
+		WFProcessSeq:                existingRecord.WFProcessSeq,
+		WFCurrentAssignStep:         existingRecord.WFCurrentAssignStep,
+		WFCurrentAssignStepAssignee: existingRecord.WFCurrentAssignStepAssignee,
+		WFCurrentAssignType:         existingRecord.WFCurrentAssignType,
+		WFCurrentAssignID:           existingRecord.WFCurrentAssignID,
+		WFCurrentAssignTempID:       existingRecord.WFCurrentAssignTempID,
+		WFCurrentAssignName:         existingRecord.WFCurrentAssignName,
+		WFCurrentAssignAccepted:     existingRecord.WFCurrentAssignAccepted,
+		WFCurrentAssignPositionID:   existingRecord.WFCurrentAssignPositionID,
+		WFCurrentAssignPositionName: existingRecord.WFCurrentAssignPositionName,
+		WFCurrentAssignOrgID:        existingRecord.WFCurrentAssignOrgID,
+		WFCurrentAssignOrgName:      existingRecord.WFCurrentAssignOrgName,
+		WFCurrentAssignComment:      existingRecord.WFCurrentAssignComment,
+
+		// Set the wf_action field
+		WFAction: "Revise",
+
+		// Set the CreatedDate field
+		CreatedDate: time.Now(),
+	}
+
+	// Generate a unique identifier for the actionLogRecord
+	actionLogRecord.WFProcessID = uuid.NewString()
+
+	// Create a record in pdms_w_wf_process_action_log
+	err = handler.DB.Create(&actionLogRecord).Error
+	if err != nil {
+		// Handle the error and return an appropriate response
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to copy record to pdms_w_wf_process_action_log",
+		})
+	}
+
+	// Step 3: Update WFStatus of the record with the previous WFProcessSeq to "In progress"
+	prevSeq := existingRecord.WFProcessSeq - 1
+
+	// Check if the record with the next WFProcessSeq exists before updating
+	var prevRecordCount int64
+	err = handler.DB.Model(&models.WFProcess{}).Where("wf_link_form_header_process_id = ? AND wf_process_seq = ?", updateData.WFLinkFormHeaderProcessID, prevSeq).Count(&prevRecordCount).Error
+	if err != nil {
+		// Handle the error and return an appropriate response
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to check if the record with the next WFProcessSeq exists",
+		})
+	}
+
+	if prevRecordCount > 0 {
+		// Step 4: Update WFStatus of the existing record to "Not start" if prev record exist
+		// Translate the modified GORM query to update WFStatus
+		err = handler.DB.
+			Model(&existingRecord).
+			Where("wf_link_form_header_process_id = ? AND wf_process_seq = ?", updateData.WFLinkFormHeaderProcessID, updateData.WFProcessSeq).
+			Update("wf_status", "Not start").
+			Error
+		if err != nil {
+			// Handle the error and return an appropriate response
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to update WFStatus to 'Not start'",
+			})
+		}
+
+		// Update WFStatus to "In progress" only if the next record exists
+		err = handler.DB.Model(&models.WFProcess{}).Where("wf_link_form_header_process_id = ? AND wf_process_seq = ?", updateData.WFLinkFormHeaderProcessID, prevSeq).Update("wf_status", "In progress").Error
+		if err != nil {
+			// Handle the error and return an appropriate response
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to update WFStatus to 'In progress' for the previous sequence",
+			})
+		}
+	}
+
+	// Return a success response
+	return c.JSON(fiber.Map{
+		"message": "Process revised successfully",
 	})
 }
 

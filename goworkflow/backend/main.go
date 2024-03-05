@@ -22,7 +22,7 @@ func main() {
 	}
 
 	// Auto-migrate the GORM models
-	err = db.AutoMigrate(&models.WFProcess{}, &models.WFProcessHistVers{})
+	err = db.AutoMigrate(&models.WFProcess{}, &models.WFProcessHistVers{}, &models.WFProcessActionLog{})
 	if err != nil {
 		fmt.Printf("Failed to auto-migrate database models: %v\n", err)
 		return
